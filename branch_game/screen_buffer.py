@@ -1,18 +1,15 @@
-# screen_buffer.py
-
-from typing import List, Tuple
 from dataclasses import dataclass, field
 from blessed import Terminal
 import sys
 
 # A cell is a tuple of (character, ANSI style string)
-ScreenCell = Tuple[str, str]
+ScreenCell = tuple[str, str]
 
 @dataclass
 class ScreenBuffer:
 	width: int
 	height: int
-	cells: List[List[ScreenCell]]
+	cells: list[list[ScreenCell]]
 
 @dataclass
 class Screen:
@@ -54,11 +51,11 @@ def draw_to_buffer(buffer: ScreenBuffer) -> None:
 			cells[y][x_start + i] = (char, "")
 
 
-def buffer_diff(screen: Screen) -> List[Tuple[int, int, ScreenCell]]:
+def buffer_diff(screen: Screen) -> list[tuple[int, int, ScreenCell]]:
 	old: ScreenBuffer = screen.old_buffer
 	new: ScreenBuffer = screen.new_buffer
 
-	diffs: List[Tuple[int, int, ScreenCell]] = []
+	diffs: list[tuple[int, int, ScreenCell]] = []
 	for y in range(new.height):
 		for x in range(new.width):
 			if old.cells[y][x] != new.cells[y][x]:
@@ -66,13 +63,12 @@ def buffer_diff(screen: Screen) -> List[Tuple[int, int, ScreenCell]]:
 
 	# TODO: refactor this
 	screen.new_buffer = create_buffer(screen.width, screen.height)
-	
+
 	return diffs
 
-
-def flush_diffs(term: Terminal, diffs: List[Tuple[int, int, ScreenCell]]) -> None:
-	output: List[str] = []
+def flush_diffs(term: Terminal, diffs: list[tuple[int, int, ScreenCell]]) -> None:
+	output: list[str] = []
 	for y, x, (char, style) in diffs:
 		output.append(term.move(y, x) + style + char)
-	sys.stdout.write("".join(output))
-	sys.stdout.flush()
+	_ = sys.stdout.write("".join(output))
+	_ = sys.stdout.flush()
