@@ -4,11 +4,13 @@ from branch_game.screen_buffer import Screen, ScreenBuffer
 
 RGB = tuple[int, int, int]
 
-@dataclass(frozen=True)
+
+@dataclass
 class RichText:
     text: str
     color: RGB = field(default=(255, 255, 255))
     bg: RGB | None = None
+
 
 def _make_style(term: Terminal, fg: RGB, bg: RGB | None) -> str:
     if not term.does_styling:
@@ -18,6 +20,7 @@ def _make_style(term: Terminal, fg: RGB, bg: RGB | None) -> str:
         bg_str = term.on_color_rgb(*bg) if bg else ""
         style = fg_str + bg_str
     return style
+
 
 def print_at(screen: Screen, term: Terminal, x: int, y: int, rich: RichText) -> None:
     """

@@ -1,6 +1,7 @@
 from typing import Callable
 import time
 
+
 def create_fps_limiter(
     fps: float,
     poll_interval: float = 0.003,
@@ -34,7 +35,7 @@ def create_fps_limiter(
                 while time.perf_counter() < next_frame:
                     pass
             end = time.perf_counter()
-            dt = end - (next_frame - target)   # actual frame duration
+            dt = end - (next_frame - target)  # actual frame duration
             next_frame += target
             return dt
 
