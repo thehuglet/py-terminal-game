@@ -33,6 +33,7 @@ class Branch:
 class BranchDisplay:
     branch: Branch | None
     depth: int
+    is_pending: bool = False
 
 
 @dataclass
@@ -50,12 +51,15 @@ class Context:
     selected_branch_index: int = field(default=0, init=False)
     branch_displays: list[BranchDisplay] = field(default_factory=list)
     pending_branch: PendingBranch | None = None
+    debug_msg: str = ""
 
 
 def t_print(x: int, y: int, text: RichText) -> None:
     """Print helper"""
     return print_at(screen, terminal, x, y, text)
 
+def update_visual_branches(ctx: Context):
+    ctx.branch_displays = generate_branch_displays(ctx)
 
 def generate_branch_displays(ctx: Context) -> list[BranchDisplay]:
     if not ctx.root_branch:
@@ -73,11 +77,11 @@ def generate_branch_displays(ctx: Context) -> list[BranchDisplay]:
 
     if ctx.pending_branch:
         index = ctx.pending_branch.index
-    # pending_branch: BranchDisplay = BranchDisplay()
-    # insert pending branch here?
+        depth = ctx.pending_branch.depth
+        pending_branch = BranchDisplay(None, depth, True)
+        branch_displays.insert(index, pending_branch)
 
     return branch_displays
-
 
 def tick(ctx: Context) -> TickOutcome:
     key = terminal.inkey(timeout=0.1)
@@ -98,9 +102,11 @@ def tick(ctx: Context) -> TickOutcome:
             ctx.pending_branch = PendingBranch(
                 parent=selected_branch_display.branch,
                 index=ctx.selected_branch_index + 1,
-                depth=selected_branch_display.depth,
+                depth=selected_branch_display.depth + 1,
             )
+            update_visual_branches(ctx)
             ctx.state = State.ADD_BRANCH_PENDING
+
             # if not ctx.root_branch:
             # ctx.branch_displays.insert(
             #     ctx.selected_branch_index, BranchDisplay(Branch(), 0)
@@ -129,11 +135,15 @@ def tick(ctx: Context) -> TickOutcome:
 
         is_selected: bool = index == ctx.selected_branch_index
 
-        # text.color = (75, 120, 155)
-        if is_selected:
+        if is_selected and ctx.state != State.ADD_BRANCH_PENDING:
             text.color = (255, 255, 150)
 
+        if branch_display.is_pending:
+            text.color = (75, 120, 155)
+
         t_print(2 * branch_display.depth, index, text)
+
+    t_print(0, 20, RichText(ctx.debug_msg))
 
     flush_diffs(terminal, buffer_diff(screen))
     return TickOutcome.RUNNING
@@ -149,7 +159,7 @@ def main():
         ),
     )
     # TODO: remove this and the init branches above
-    ctx.branch_displays = generate_branch_displays(ctx)
+    update_visual_branches(ctx)
 
     fps_limiter = create_fps_limiter(60)
 
