@@ -9,11 +9,9 @@ from branch_game.ezterm import RichText
 from branch_game.fps_limiter import create_fps_limiter
 import branch_game.ezterm as ezterm
 
-
 class AppStatus(Enum):
     RUNNING = auto()
     EXIT = auto()
-
 
 class State(Enum):
     COMPOSING_TREE = auto()
@@ -26,11 +24,10 @@ class UIAction(Enum):
     ADD_NODE_DRAFT = auto()
     CONFIRM_NODE_DRAFT = auto()
 
-
 @dataclass
 class Node:
     children: list[Node] = field(default_factory=list)
-    is_sentinel: bool = field(kw_only=False, default=True)
+    is_sentinel: bool = field(default=False, kw_only=True)
 
 
 @dataclass
@@ -67,15 +64,14 @@ def refresh_tree_view(ctx: AppContext):
 def generate_tree_view(ctx: AppContext) -> list[TreeViewItem]:
     tree_view: list[TreeViewItem] = []
 
-    if node := ctx.root_node:
+    def walk_tree(node: Node, depth: int = 0) -> list[TreeViewItem]:
+        out = [TreeViewItem(node, depth)]
 
-        def walk_tree(node: Node, depth: int = 0) -> list[TreeViewItem]:
-            out = [TreeViewItem(node, depth)]
-            for child in node.children:
-                out.extend(walk_tree(child, depth + 1))
-            return out
+        for child in node.children:
+            out.extend(walk_tree(child, depth + 1))
+        return out
 
-        tree_view.extend(walk_tree(node))
+    tree_view.extend(walk_tree(ctx.root_node))
 
     if ctx.node_draft:
         index = ctx.node_draft.index
@@ -104,7 +100,7 @@ def tick(ctx: AppContext, print_at: Callable[[int, int, RichText], None]) -> App
             ui_action = UIAction.TREE_VIEW_MOVE_DOWN
         elif key == "b":
             ui_action = UIAction.ADD_NODE_DRAFT
-    elif ctx.state == State.NODE_DRAFTING:
+    elif ctx.state == State .NODE_DRAFTING:
         if key.name == "KEY_ENTER":
             ui_action = UIAction.CONFIRM_NODE_DRAFT
 
@@ -153,15 +149,15 @@ def tick(ctx: AppContext, print_at: Callable[[int, int, RichText], None]) -> App
         case _:
             pass
 
-    # Rendering
+    # < = = | Rendering | = = >
     for index, tree_view_item in enumerate(ctx.tree_view):
         text = RichText("node", color=(155, 155, 155))
 
         is_selected: bool = index == ctx.selected_item_index
 
+        # Override color for highlighting based on the context
         if is_selected and ctx.state != State.NODE_DRAFTING:
             text.color = (255, 255, 150)
-
         if tree_view_item.is_draft:
             text.color = (75, 120, 155)
 
@@ -182,9 +178,7 @@ def main():
     ctx = AppContext(
         terminal,
         screen,
-        Node(
-            [Node()],
-        ),
+        Node(is_sentinel=True),
     )
     refresh_tree_view(ctx)
     fps_limiter = create_fps_limiter(60)
