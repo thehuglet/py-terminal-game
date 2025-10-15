@@ -24,8 +24,14 @@ class UIAction(Enum):
     ADD_NODE_DRAFT = auto()
     CONFIRM_NODE_DRAFT = auto()
 
+class NodeRarity(Enum):
+    COMMON = auto()
+    UNCOMMON = auto()
+    RARE = auto()
+
 @dataclass
 class Node:
+    rarity: NodeRarity
     children: list[Node] = field(default_factory=list)
     is_sentinel: bool = field(default=False, kw_only=True)
 
@@ -129,7 +135,7 @@ def tick(ctx: AppContext, print_at: Callable[[int, int, RichText], None]) -> App
             ctx.state = State.NODE_DRAFTING
         case UIAction.CONFIRM_NODE_DRAFT:
             if ctx.node_draft:
-                new_node = Node()
+                new_node = Node(NodeRarity.COMMON)
 
                 if parent_node := ctx.node_draft.parent:
                     parent_node.children.insert(0, new_node)
@@ -178,7 +184,7 @@ def main():
     ctx = AppContext(
         terminal,
         screen,
-        Node(is_sentinel=True),
+        Node(NodeRarity.COMMON, is_sentinel=True),
     )
     refresh_tree_view(ctx)
     fps_limiter = create_fps_limiter(60)
