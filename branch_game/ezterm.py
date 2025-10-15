@@ -22,7 +22,7 @@ def _make_style(term: Terminal, fg: RGB, bg: RGB | None) -> str:
     return style
 
 
-def print_at(screen: Screen, term: Terminal, x: int, y: int, rich: RichText) -> None:
+def print_at(term: Terminal, screen: Screen, x: int, y: int, text: RichText) -> None:
     """
     Draws rich text into the screen buffer at (x, y).
     Each character of the string is styled individually (same style).
@@ -32,10 +32,10 @@ def print_at(screen: Screen, term: Terminal, x: int, y: int, rich: RichText) -> 
     if not (0 <= y < buffer.height):
         return  # Y out of bounds
 
-    style = _make_style(term, rich.color, rich.bg)
+    style = _make_style(term, text.color, text.bg)
     cells = buffer.cells
 
-    for i, char in enumerate(rich.text):
+    for i, char in enumerate(text.text):
         px = x + i
         if 0 <= px < buffer.width:
             cells[y][px] = (char, style)
