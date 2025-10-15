@@ -58,22 +58,23 @@ def t_print(x: int, y: int, text: RichText) -> None:
     """Print helper"""
     return print_at(screen, terminal, x, y, text)
 
+
 def update_visual_branches(ctx: Context):
     ctx.branch_displays = generate_branch_displays(ctx)
 
+
 def generate_branch_displays(ctx: Context) -> list[BranchDisplay]:
-    if not ctx.root_branch:
-        return []
+    branch_displays: list[BranchDisplay] = []
 
-    branch: Branch = ctx.root_branch
+    if branch := ctx.root_branch:
 
-    def walk_tree(branch: Branch, depth: int = 0) -> list[BranchDisplay]:
-        out = [BranchDisplay(branch, depth)]
-        for child in branch.children:
-            out.extend(walk_tree(child, depth + 1))
-        return out
+        def walk_tree(branch: Branch, depth: int = 0) -> list[BranchDisplay]:
+            out = [BranchDisplay(branch, depth)]
+            for child in branch.children:
+                out.extend(walk_tree(child, depth + 1))
+            return out
 
-    branch_displays = walk_tree(branch)
+        branch_displays.extend(walk_tree(branch))
 
     if ctx.pending_branch:
         index = ctx.pending_branch.index
@@ -82,6 +83,7 @@ def generate_branch_displays(ctx: Context) -> list[BranchDisplay]:
         branch_displays.insert(index, pending_branch)
 
     return branch_displays
+
 
 def tick(ctx: Context) -> TickOutcome:
     key = terminal.inkey(timeout=0.1)
@@ -98,38 +100,42 @@ def tick(ctx: Context) -> TickOutcome:
         elif key.name == "KEY_DOWN" and can_move_down:
             ctx.selected_branch_index += 1
         elif key == "b":
-            selected_branch_display = ctx.branch_displays[ctx.selected_branch_index]
-            ctx.pending_branch = PendingBranch(
-                parent=selected_branch_display.branch,
-                index=ctx.selected_branch_index + 1,
-                depth=selected_branch_display.depth + 1,
-            )
+            if ctx.root_branch:
+                selected_branch_display = ctx.branch_displays[ctx.selected_branch_index]
+                ctx.pending_branch = PendingBranch(
+                    parent=selected_branch_display.branch,
+                    index=ctx.selected_branch_index + 1,
+                    depth=selected_branch_display.depth + 1,
+                )
+            else:
+                ctx.pending_branch = PendingBranch(
+                    parent=None,
+                    index=0,
+                    depth=0,
+                )
+
             update_visual_branches(ctx)
             ctx.state = State.ADD_BRANCH_PENDING
-
-            # if not ctx.root_branch:
-            # ctx.branch_displays.insert(
-            #     ctx.selected_branch_index, BranchDisplay(Branch(), 0)
-            # )
-            # else:
-            # ctx.branch_displays.insert()
+            ctx.debug_msg = str(ctx.branch_displays)
 
     elif ctx.state == State.ADD_BRANCH_PENDING:
         if key.name == "KEY_ENTER":
-            # if not ctx.root_branch:
-            #     ctx.root_branch = ctx.branch_displays[0].branch
-            #     ctx.branch_displays[0].is_ghost = False
+            if ctx.pending_branch:
+                new_branch = Branch()
+
+                if parent_branch := ctx.pending_branch.parent:
+                    parent_branch.children.insert(0, new_branch)
+                else:
+                    # This handles the case of a branch at the root
+                    ctx.root_branch = new_branch
+
+            # clears the pending draft
+            ctx.pending_branch = None
+            update_visual_branches(ctx)
 
             ctx.state = State.BASE_PLACEHOLDER
-        # if not ctx.root_branch:
-        #     ctx.root_branch = Branch()
-        # else:
-        #     selected_branch = get_selected_branch(ctx)
-        #     selected_branch.children.insert(0, Branch())
 
-        # ctx.branch_displays = generate_branch_displays(ctx.root_branch)
-
-    # displays
+    # rendering
     for index, branch_display in enumerate(ctx.branch_displays):
         text = RichText("branch", color=(155, 155, 155))
 
@@ -150,17 +156,7 @@ def tick(ctx: Context) -> TickOutcome:
 
 
 def main():
-    ctx = Context(
-        root_branch=Branch(
-            [
-                Branch([Branch()]),
-                Branch(),
-            ]
-        ),
-    )
-    # TODO: remove this and the init branches above
-    update_visual_branches(ctx)
-
+    ctx = Context()
     fps_limiter = create_fps_limiter(60)
 
     with terminal.cbreak(), terminal.hidden_cursor(), terminal.fullscreen():
