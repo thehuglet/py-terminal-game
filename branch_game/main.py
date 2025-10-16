@@ -9,9 +9,11 @@ from branch_game.ezterm import RichText
 from branch_game.fps_limiter import create_fps_limiter
 import branch_game.ezterm as ezterm
 
+
 class AppStatus(Enum):
     RUNNING = auto()
     EXIT = auto()
+
 
 class State(Enum):
     COMPOSING_TREE = auto()
@@ -24,10 +26,12 @@ class UIAction(Enum):
     ADD_NODE_DRAFT = auto()
     CONFIRM_NODE_DRAFT = auto()
 
+
 class NodeRarity(Enum):
     COMMON = auto()
     UNCOMMON = auto()
     RARE = auto()
+
 
 @dataclass
 class Node:
@@ -38,13 +42,14 @@ class Node:
 
 @dataclass
 class TreeViewItem:
-    node: Node | None
+    node: Node
     depth: int
     is_draft: bool = False
 
 
 @dataclass
 class NodeDraft:
+    node: Node
     parent: Node | None
     index: int
     depth: int
@@ -67,6 +72,14 @@ def refresh_tree_view(ctx: AppContext):
     ctx.tree_view = generate_tree_view(ctx)
 
 
+def get_available_node_branch_slots(node: Node) -> int:
+    # This is a placeholder for the time being
+    # every node will have 2 slots atm
+    placeholder_max_branch_slots = 2
+
+    return max(0, placeholder_max_branch_slots - len(node.children))
+
+
 def generate_tree_view(ctx: AppContext) -> list[TreeViewItem]:
     tree_view: list[TreeViewItem] = []
 
@@ -82,8 +95,8 @@ def generate_tree_view(ctx: AppContext) -> list[TreeViewItem]:
     if ctx.node_draft:
         index = ctx.node_draft.index
         depth = ctx.node_draft.depth
-        node_draft = TreeViewItem(None, depth, True)
-        tree_view.insert(index, node_draft)
+        draft_item = TreeViewItem(ctx.node_draft.node, depth, True)
+        tree_view.insert(index, draft_item)
 
     return tree_view
 
@@ -93,20 +106,22 @@ def tick(ctx: AppContext, print_at: Callable[[int, int, RichText], None]) -> App
     if key == "q":
         return AppStatus.EXIT
 
-    # < = = | Input to action translation | = = >
+    # < = = | Input to UIAction mapping | = = >
     ui_action: UIAction | None = None
 
     if ctx.state == State.COMPOSING_TREE:
         can_move_up: bool = ctx.selected_item_index > 0
         can_move_down: bool = ctx.selected_item_index < (len(ctx.tree_view)) - 1
+        selected_node: Node = ctx.tree_view[ctx.selected_item_index].node
+        can_add_branch: bool = get_available_node_branch_slots(selected_node) > 0
 
         if key.name == "KEY_UP" and can_move_up:
             ui_action = UIAction.TREE_VIEW_MOVE_UP
         elif key.name == "KEY_DOWN" and can_move_down:
             ui_action = UIAction.TREE_VIEW_MOVE_DOWN
-        elif key == "b":
+        elif key == "b" and can_add_branch:
             ui_action = UIAction.ADD_NODE_DRAFT
-    elif ctx.state == State .NODE_DRAFTING:
+    elif ctx.state == State.NODE_DRAFTING:
         if key.name == "KEY_ENTER":
             ui_action = UIAction.CONFIRM_NODE_DRAFT
 
@@ -117,19 +132,13 @@ def tick(ctx: AppContext, print_at: Callable[[int, int, RichText], None]) -> App
         case UIAction.TREE_VIEW_MOVE_DOWN:
             ctx.selected_item_index += 1
         case UIAction.ADD_NODE_DRAFT:
-            if ctx.root_node:
-                selected_view_item = ctx.tree_view[ctx.selected_item_index]
-                ctx.node_draft = NodeDraft(
-                    parent=selected_view_item.node,
-                    index=ctx.selected_item_index + 1,
-                    depth=selected_view_item.depth + 1,
-                )
-            else:
-                ctx.node_draft = NodeDraft(
-                    parent=None,
-                    index=0,
-                    depth=0,
-                )
+            selected_view_item = ctx.tree_view[ctx.selected_item_index]
+            ctx.node_draft = NodeDraft(
+                node=Node(NodeRarity.COMMON),
+                parent=selected_view_item.node,
+                index=ctx.selected_item_index + 1,
+                depth=selected_view_item.depth + 1,
+            )
 
             refresh_tree_view(ctx)
             ctx.state = State.NODE_DRAFTING

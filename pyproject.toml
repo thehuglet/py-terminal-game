@@ -3,7 +3,7 @@ name = "branch-game"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Amy Opas",email = "amy.opas@proton.me"}
+    {name = "Amy Opas", email = "amy.opas@proton.me"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -11,6 +11,8 @@ dependencies = [
     "blessed (>=1.22.0,<2.0.0)"
 ]
 
+[tool.ruff]
+line-length = 100
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
