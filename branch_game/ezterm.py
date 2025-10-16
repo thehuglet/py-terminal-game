@@ -22,20 +22,23 @@ def _make_style(term: Terminal, fg: RGB, bg: RGB | None) -> str:
     return style
 
 
-def print_at(term: Terminal, screen: Screen, x: int, y: int, text: RichText) -> None:
-    """
-    Draws rich text into the screen buffer at (x, y).
-    Each character of the string is styled individually (same style).
-    """
+def print_at(term: Terminal, screen: Screen, x: int, y: int, text: RichText | list[RichText]) -> None:
+    """ Draws rich text into the screen buffer at (x, y). Each character is styled individually. """
     buffer: ScreenBuffer = screen.new_buffer
+
+    # Normalize text to list in case of RichText for simplicity
+    if isinstance(text, RichText):
+        text = [text]
 
     if not (0 <= y < buffer.height):
         return  # Y out of bounds
 
-    style = _make_style(term, text.color, text.bg)
+    px = x  # track horizontal position across segments
     cells = buffer.cells
 
-    for i, char in enumerate(text.text):
-        px = x + i
-        if 0 <= px < buffer.width:
-            cells[y][px] = (char, style)
+    for text_segment in text:
+        style = _make_style(term, text_segment.color, text_segment.bg)
+        for char in text_segment.text:
+            if 0 <= px < buffer.width:
+                cells[y][px] = (char, style)
+            px += 1
