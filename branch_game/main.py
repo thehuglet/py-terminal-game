@@ -166,17 +166,20 @@ def tick(ctx: AppContext, print_at: Callable[[int, int, RichText], None]) -> App
 
     # < = = | Rendering | = = >
     for index, tree_view_item in enumerate(ctx.tree_view):
-        text = RichText("node", color=(155, 155, 155))
+        rich_text = RichText("node", color=(155, 155, 155))
 
         is_selected: bool = index == ctx.selected_item_index
 
         # Override color for highlighting based on the context
         if is_selected and ctx.state != State.NODE_DRAFTING:
-            text.color = (255, 255, 150)
+            branch_count = len(tree_view_item.node.children)
+            max_branch_count = 2
+            rich_text.text += f" ({branch_count}/{max_branch_count})"
+            rich_text.color = (255, 255, 150)
         if tree_view_item.is_draft:
-            text.color = (75, 120, 155)
+            rich_text.color = (75, 120, 155)
 
-        print_at(2 * tree_view_item.depth, index, text)
+        print_at(2 * tree_view_item.depth, index, rich_text)
 
     print_at(0, 20, RichText(ctx.debug_msg))
 
