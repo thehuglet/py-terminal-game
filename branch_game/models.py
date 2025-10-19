@@ -21,6 +21,7 @@ class Node:
 
 @dataclass
 class TreeViewItem:
+    name: str
     node: Node
     depth: int
     is_draft: bool = False
@@ -34,6 +35,16 @@ class NodeDraft:
     depth: int
 
 
+@dataclass
+class JokerData:
+    temp_label: str
+
+
+@dataclass
+class InventoryItemNode:
+    data: JokerData
+
+
 class State(Enum):
     COMPOSING_TREE = auto()
     NODE_DRAFTING = auto()
@@ -45,7 +56,9 @@ class AppContext:
     screen: Screen
     root_node: Node
 
+    inventory: list[InventoryItemNode] = field(default_factory=list)
     state: State = field(default=State.COMPOSING_TREE, init=False)
     selected_item_index: int = field(default=0, init=False)
     node_draft: NodeDraft | None = None
+    node_draft_selected_inventory_index: int = 0
     debug_msg: str = ""
