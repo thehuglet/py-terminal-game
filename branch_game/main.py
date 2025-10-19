@@ -1,15 +1,19 @@
 from __future__ import annotations
+
 from copy import copy
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from functools import partial
-from random import choice, random
+from random import choice
 from typing import Callable
+
 from blessed import Terminal
-from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
+
+import branch_game.ezterm as ezterm
 from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
 from branch_game.fps_limiter import create_fps_limiter
-import branch_game.ezterm as ezterm
+from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
+
 
 class AppStatus(Enum):
     RUNNING = auto()
@@ -77,12 +81,8 @@ class AppContext:
 
     state: State = field(default=State.COMPOSING_TREE, init=False)
     selected_item_index: int = field(default=0, init=False)
-    tree_view: list[TreeViewItem] = field(default_factory=list)
     node_draft: NodeDraft | None = None
     debug_msg: str = ""
-
-def refresh_tree_view(ctx: AppContext):
-    ctx.tree_view = generate_tree_view(ctx)
 
 
 def get_available_node_branch_slots(node: Node) -> int:
@@ -122,10 +122,12 @@ def tick(
     # < = = | Input to UIAction mapping | = = >
     ui_action: UIAction | None = None
 
+    tree_view = generate_tree_view(ctx)
+
     if ctx.state == State.COMPOSING_TREE:
         can_move_up: bool = ctx.selected_item_index > 0
-        can_move_down: bool = ctx.selected_item_index < (len(ctx.tree_view)) - 1
-        selected_node: Node = ctx.tree_view[ctx.selected_item_index].node
+        can_move_down: bool = ctx.selected_item_index < (len(tree_view)) - 1
+        selected_node: Node = tree_view[ctx.selected_item_index].node
         can_add_branch: bool = get_available_node_branch_slots(selected_node) > 0
 
         if key.name == "KEY_UP" and can_move_up:
@@ -145,7 +147,7 @@ def tick(
         case UIAction.TREE_VIEW_MOVE_DOWN:
             ctx.selected_item_index += 1
         case UIAction.ADD_NODE_DRAFT:
-            selected_view_item = ctx.tree_view[ctx.selected_item_index]
+            selected_view_item = tree_view[ctx.selected_item_index]
             # TODO: remove this, this is just for testing
             random_rarity = choice(list(NodeRarity))
 
@@ -156,8 +158,10 @@ def tick(
                 depth=selected_view_item.depth + 1,
             )
 
-            refresh_tree_view(ctx)
+            # Update tree view immediately
+            tree_view = generate_tree_view(ctx)
             ctx.state = State.NODE_DRAFTING
+
         case UIAction.CONFIRM_NODE_DRAFT:
             if ctx.node_draft:
                 new_node = ctx.node_draft.node
@@ -171,17 +175,17 @@ def tick(
             # clears the node draft
             ctx.node_draft = None
 
+            # Update tree view immediately
+            tree_view = generate_tree_view(ctx)
             # move cursor onto the newly created node
             ctx.selected_item_index += 1
-
-            refresh_tree_view(ctx)
 
             ctx.state = State.COMPOSING_TREE
         case _:
             pass
 
     # < = = | Rendering | = = >
-    for index, tree_view_item in enumerate(ctx.tree_view):
+    for index, tree_view_item in enumerate(tree_view):
         text_segments: list[RichText] = []
 
         regular_node_alpha = 0.4
@@ -217,15 +221,13 @@ def main():
     terminal = Terminal()
     screen = Screen(terminal.width, terminal.height)
     print_at = partial(ezterm.print_at, terminal, screen)
-
-    # ctx = Context()
     ctx = AppContext(
         terminal,
         screen,
         Node(NodeRarity.COMMON, is_sentinel=True),
     )
+
     fill_screen_background(terminal, screen, BACKGROUND_COLOR)
-    refresh_tree_view(ctx)
     fps_limiter = create_fps_limiter(60)
 
     with terminal.cbreak(), terminal.hidden_cursor(), terminal.fullscreen():
