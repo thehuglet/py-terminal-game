@@ -6,13 +6,6 @@ from blessed import Terminal
 from branch_game.screen_buffer import Screen
 
 
-class UIAction(Enum):
-    TREE_VIEW_MOVE_UP = auto()
-    TREE_VIEW_MOVE_DOWN = auto()
-    ADD_NODE_DRAFT = auto()
-    CONFIRM_NODE_DRAFT = auto()
-
-
 class NodeRarity(Enum):
     COMMON = auto()
     UNCOMMON = auto()

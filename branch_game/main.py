@@ -19,7 +19,6 @@ from branch_game.models import (
     NodeRarity,
     State,
     TreeViewItem,
-    UIAction,
 )
 from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
 
@@ -27,6 +26,13 @@ from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
 class AppStatus(Enum):
     RUNNING = auto()
     EXIT = auto()
+
+
+class UIAction(Enum):
+    TREE_VIEW_MOVE_UP = auto()
+    TREE_VIEW_MOVE_DOWN = auto()
+    ADD_NODE_DRAFT = auto()
+    CONFIRM_NODE_DRAFT = auto()
 
 
 def get_available_node_branch_slots(node: Node) -> int:
