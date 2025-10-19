@@ -54,7 +54,6 @@ def draw_to_buffer(buffer: ScreenBuffer) -> None:
         if 0 <= x_start + i < width:
             cells[y][x_start + i] = (char, "")
 
-
 def buffer_diff(screen: Screen) -> list[tuple[int, int, ScreenCell]]:
     old: ScreenBuffer = screen.old_buffer
     new: ScreenBuffer = screen.new_buffer

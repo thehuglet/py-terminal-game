@@ -7,10 +7,9 @@ from random import choice, random
 from typing import Callable
 from blessed import Terminal
 from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
-from branch_game.ezterm import RGBA, RichText
+from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
 from branch_game.fps_limiter import create_fps_limiter
 import branch_game.ezterm as ezterm
-
 
 class AppStatus(Enum):
     RUNNING = auto()
@@ -81,7 +80,6 @@ class AppContext:
     tree_view: list[TreeViewItem] = field(default_factory=list)
     node_draft: NodeDraft | None = None
     debug_msg: str = ""
-
 
 def refresh_tree_view(ctx: AppContext):
     ctx.tree_view = generate_tree_view(ctx)
@@ -201,7 +199,6 @@ def tick(
             highlighted_node_alpha = 1.0
             rich_text_color = copy(NODE_RARITY_COLOR[tree_view_item.node.rarity])
             rich_text_color.a *= highlighted_node_alpha
-            # rich_text.color = RGBA(1.0, 1.0, 1.0, 1.0)
         if tree_view_item.is_draft:
             rich_text_color = RGBA(0.5, 1.0, 1.0, 0.5)
 
@@ -227,6 +224,7 @@ def main():
         screen,
         Node(NodeRarity.COMMON, is_sentinel=True),
     )
+    fill_screen_background(terminal, screen, BACKGROUND_COLOR)
     refresh_tree_view(ctx)
     fps_limiter = create_fps_limiter(60)
 

@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
+from typing import cast
 from blessed import Terminal
 from numpy.typing import NDArray
 from branch_game.screen_buffer import Screen, ScreenBuffer
 import numpy as np
-
 
 @dataclass
 class RGBA:
@@ -16,6 +16,7 @@ class RGBA:
         components = (self.r, self.g, self.b, self.a)
         return components[key]
 
+BACKGROUND_COLOR = RGBA(0.0, 0.0, 0.0, 1.0)
 
 @dataclass
 class RichText:
@@ -29,20 +30,26 @@ def _make_style(term: Terminal, fg: RGBA, bg: RGBA | None) -> str:
         style = ""
     else:
         fg_str = term.color_rgb(*_rgba_to_rgb_int(fg))
-        bg_str = term.on_color_rgb(*_rgba_to_rgb_int(bg)) if bg else ""
-        style = fg_str + bg_str
+        style = fg_str + term.on_color_rgb(*_rgba_to_rgb_int(BACKGROUND_COLOR))
     return style
 
 
 def _rgba_to_rgb_int(col_rgba: RGBA) -> tuple[int, int, int]:
-    """This returns RGB in ints because blessed uses ints."""
-    col_rgb = col_rgba[:3]
-    alpha = col_rgba[3]
+    col_rgb = np.array(col_rgba[:3], dtype=np.float64)
+    alpha = cast(float, col_rgba[3])
 
-    col_rgb_scaled: NDArray[np.float64] = np.array(col_rgb) * alpha
-    col_rgb_int: NDArray[np.int32] = np.clip(np.round(col_rgb_scaled * 255).astype(int), 0, 255)
-    return tuple(col_rgb_int)
+    # scale and round
+    scaled: NDArray[np.int_] = np.clip(np.round(col_rgb * alpha * 255), 0, 255).astype(int)
 
+    r, g, b = scaled    # pyright:ignore[reportAny]
+    return r, g, b
+
+def fill_screen_background(terminal: Terminal, screen: Screen, color: RGBA):
+    bg_style = terminal.on_color_rgb(*_rgba_to_rgb_int(color))
+
+    for y in range(screen.new_buffer.height):
+        for x in range(screen.new_buffer.width):
+            screen.new_buffer.cells[y][x] = (" ", bg_style)
 
 def print_at(
     term: Terminal, screen: Screen, x: int, y: int, text: RichText | list[RichText]
