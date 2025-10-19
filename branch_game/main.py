@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import copy
-from dataclasses import dataclass, field
 from enum import Enum, auto
 from functools import partial
 from random import choice
@@ -9,80 +8,25 @@ from typing import Callable
 
 from blessed import Terminal
 
+from branch_game.data import NODE_RARITY_COLOR, NODE_RARITY_MAX_BRANCH_COUNT
 import branch_game.ezterm as ezterm
 from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
 from branch_game.fps_limiter import create_fps_limiter
+from branch_game.models import (
+    AppContext,
+    Node,
+    NodeDraft,
+    NodeRarity,
+    State,
+    TreeViewItem,
+    UIAction,
+)
 from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
 
 
 class AppStatus(Enum):
     RUNNING = auto()
     EXIT = auto()
-
-
-class State(Enum):
-    COMPOSING_TREE = auto()
-    NODE_DRAFTING = auto()
-
-
-class UIAction(Enum):
-    TREE_VIEW_MOVE_UP = auto()
-    TREE_VIEW_MOVE_DOWN = auto()
-    ADD_NODE_DRAFT = auto()
-    CONFIRM_NODE_DRAFT = auto()
-
-
-class NodeRarity(Enum):
-    COMMON = auto()
-    UNCOMMON = auto()
-    RARE = auto()
-
-
-NODE_RARITY_COLOR = {
-    NodeRarity.COMMON: RGBA(1.0, 1.0, 1.0, 1.0),
-    NodeRarity.UNCOMMON: RGBA(0.2, 0.8, 0.4, 1.0),
-    NodeRarity.RARE: RGBA(0.85, 0.25, 0.3, 1.0),
-}
-
-NODE_RARITY_MAX_BRANCH_COUNT = {
-    NodeRarity.COMMON: 2,
-    NodeRarity.UNCOMMON: 3,
-    NodeRarity.RARE: 4,
-}
-
-
-@dataclass
-class Node:
-    rarity: NodeRarity
-    children: list[Node] = field(default_factory=list)
-    is_sentinel: bool = field(default=False, kw_only=True)
-
-
-@dataclass
-class TreeViewItem:
-    node: Node
-    depth: int
-    is_draft: bool = False
-
-
-@dataclass
-class NodeDraft:
-    node: Node
-    parent: Node | None
-    index: int
-    depth: int
-
-
-@dataclass
-class AppContext:
-    terminal: Terminal
-    screen: Screen
-    root_node: Node
-
-    state: State = field(default=State.COMPOSING_TREE, init=False)
-    selected_item_index: int = field(default=0, init=False)
-    node_draft: NodeDraft | None = None
-    debug_msg: str = ""
 
 
 def get_available_node_branch_slots(node: Node) -> int:
@@ -116,6 +60,7 @@ def tick(
     ctx: AppContext, print_at: Callable[[int, int, RichText | list[RichText]], None]
 ) -> AppStatus:
     key = ctx.terminal.inkey(timeout=0.1)
+
     if key == "q":
         return AppStatus.EXIT
 
