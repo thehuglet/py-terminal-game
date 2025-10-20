@@ -6,59 +6,92 @@ from blessed import Terminal
 from branch_game.screen_buffer import Screen
 
 
-class NodeRarity(Enum):
+# class RuneRarity(Enum):
+#     COMMON = auto()
+#     UNCOMMON = auto()
+#     RARE = auto()
+
+
+# @dataclass
+# class Rune:
+#     rarity: RuneRarity
+#     children: list[Rune] = field(default_factory=list)
+#     is_sentinel: bool = field(default=False, kw_only=True)
+
+
+# @dataclass
+# class RuneData:
+#     pass
+
+
+# @dataclass
+# class TreeViewItem:
+#     rune_ref: Rune
+#     display_name: str
+#     depth: int
+
+
+# @dataclass
+# class InventoryItemRune:
+#     # data: JokerData
+#     pass
+
+
+# class State(Enum):
+#     COMPOSING_TREE = auto()
+#     NODE_DRAFTING = auto()
+
+
+class GameState:
+    pass
+
+
+@dataclass
+class NavigatingTree(GameState):
+    selected_view_item_index: int
+
+
+class RuneRarity(Enum):
     COMMON = auto()
     UNCOMMON = auto()
     RARE = auto()
 
 
 @dataclass
+class RuneData:
+    display_name: str
+
+
+@dataclass
+class Rune:
+    rarity: RuneRarity
+    data: RuneData
+
+
+@dataclass
 class Node:
-    rarity: NodeRarity
+    rune: Rune
     children: list[Node] = field(default_factory=list)
-    is_sentinel: bool = field(default=False, kw_only=True)
+    is_sentinel: bool = False
 
 
 @dataclass
 class TreeViewItem:
-    name: str
     node: Node
     depth: int
-    is_draft: bool = False
-
-
-@dataclass
-class NodeDraft:
-    node: Node
-    parent: Node | None
-    index: int
-    depth: int
-
-
-@dataclass
-class JokerData:
-    temp_label: str
-
-
-@dataclass
-class InventoryItemNode:
-    data: JokerData
-
-
-class State(Enum):
-    COMPOSING_TREE = auto()
-    NODE_DRAFTING = auto()
 
 
 @dataclass
 class AppContext:
     terminal: Terminal
     screen: Screen
-    root_node: Node
+    state: GameState
+    node_tree: Node
+    owned_runes: list[Rune] = field(default_factory=list)
 
-    inventory: list[InventoryItemNode] = field(default_factory=list)
-    state: State = field(default=State.COMPOSING_TREE, init=False)
-    selected_item_index: int = field(default=0, init=False)
-    node_draft: NodeDraft | None = None
-    node_draft_selected_inventory_index: int = 0
-    debug_msg: str = ""
+    # inventory: list[InventoryItemNode] = field(default_factory=list)
+    # state: State = field(default=State.COMPOSING_TREE, init=False)
+    # selected_item_index: int = field(default=0, init=False)
+    # node_draft: NodeDraft | None = None
+    # node_draft_selected_inventory_index: int = 0
+    # debug_msg: str = ""
