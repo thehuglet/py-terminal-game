@@ -1,7 +1,6 @@
 from branch_game.ezterm import RGBA
 from branch_game.models import RuneRarity
 
-
 RUNE_RARITY_COLOR = {
     RuneRarity.COMMON: RGBA(1.0, 1.0, 1.0, 1.0),
     RuneRarity.UNCOMMON: RGBA(0.2, 0.8, 0.4, 1.0),
