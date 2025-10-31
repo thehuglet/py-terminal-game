@@ -19,7 +19,7 @@ class NavigatingTree(GameState):
 
 @dataclass
 class DraftingNode(GameState):
-    parent: TreeViewItem
+    parent_view_item: TreeViewItem
     draft_node_index_in_tree_view: int
     selected_owned_rune_index: int
 
@@ -56,9 +56,10 @@ class TreeViewItem:
 
 
 @dataclass
-class AppContext:
+class Context:
     terminal: Terminal
     screen: Screen
     state: GameState
     node_tree: Node
     owned_runes: list[Rune] = field(default_factory=list)  # type: ignore[reportUnknownVariableType]
+    tick_count: int = 0

@@ -1,7 +1,8 @@
+import sys
 from copy import deepcopy
 from dataclasses import dataclass, field
+
 from blessed import Terminal
-import sys
 
 # A cell is a tuple of (character, ANSI style string)
 ScreenCell = tuple[str, str]

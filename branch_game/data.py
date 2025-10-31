@@ -1,3 +1,4 @@
+from copy import copy
 from branch_game.ezterm import RGBA
 from branch_game.models import RuneRarity
 
@@ -12,3 +13,7 @@ RUNE_RARITY_MAX_BRANCH_COUNT = {
     RuneRarity.UNCOMMON: 3,
     RuneRarity.RARE: 4,
 }
+
+
+def rune_rarity_color(rarity: RuneRarity) -> RGBA:
+    return copy(RUNE_RARITY_COLOR[rarity])

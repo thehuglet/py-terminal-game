@@ -1,9 +1,11 @@
 from dataclasses import dataclass, field
 from typing import cast
+
+import numpy as np
 from blessed import Terminal
 from numpy.typing import NDArray
+
 from branch_game.screen_buffer import Screen, ScreenBuffer
-import numpy as np
 
 
 @dataclass
