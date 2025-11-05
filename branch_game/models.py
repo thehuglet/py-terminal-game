@@ -63,3 +63,9 @@ class Context:
     node_tree: Node
     owned_runes: list[Rune] = field(default_factory=list)  # type: ignore[reportUnknownVariableType]
     tick_count: int = 0
+
+
+@dataclass
+class FPSCounter:
+    ema: float = 0.0
+    alpha: float = 0.08

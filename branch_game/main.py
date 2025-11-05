@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import math
 from enum import Enum, auto
 from functools import partial
-import math
 from typing import Callable
 
 from blessed import Terminal
@@ -11,10 +11,12 @@ from blessed.keyboard import Keystroke
 import branch_game.ezterm as ezterm
 from branch_game.data import RUNE_RARITY_MAX_BRANCH_COUNT, rune_rarity_color
 from branch_game.ezterm import BACKGROUND_COLOR, RichText, fill_screen_background
+from branch_game.fps_counter import render_fps_counter, update_fps_counter
 from branch_game.fps_limiter import create_fps_limiter
 from branch_game.models import (
     Context,
     DraftingNode,
+    FPSCounter,
     NavigatingTree,
     Node,
     Rune,
@@ -116,6 +118,7 @@ def tick(
     ctx: Context,
     delta_time: float,
     print_at: PrintAtCallable,
+    fps_counter: FPSCounter,
 ) -> ProgramStatus:
     key: Keystroke = ctx.terminal.inkey(timeout=0.0)
     if key == "q":
@@ -233,13 +236,26 @@ def tick(
             text_segments.append(RichText(text, color))
 
         if item_is_ghost:
-            color.a = 0.7 + 0.2 * math.sin(5.0 * ctx.tick_count * delta_time)
+            min_alpha: float = 0.3
+            max_alpha: float = 1.0
+            color.a = 0.3 + (max_alpha - min_alpha) * (
+                math.sin(5.0 * ctx.tick_count * delta_time) * 0.5 + 0.5
+            )
 
         print_at(2 * item.depth, index, text_segments)
 
     # --- Carousel: keep selected item centered and shift neighbors around it ---
     if isinstance(ctx.state, DraftingNode) and ctx.owned_runes:
         render_carousel(ctx, print_at)
+
+    # --- FPS Counter ---
+    update_fps_counter(fps_counter, delta_time)
+    render_fps_counter(
+        ctx.terminal,
+        ctx.screen,
+        fps_counter,
+        ctx.screen.width,
+    )
 
     flush_diffs(ctx.terminal, buffer_diff(ctx.screen))
     return ProgramStatus.RUNNING
@@ -255,6 +271,7 @@ def main() -> None:
         state=NavigatingTree(selected_view_item_index=0),
         node_tree=Node(Rune(RuneRarity.COMMON, RuneData(0, "dummy")), is_sentinel=True),
     )
+    fps_counter = FPSCounter()
 
     # TODO: remove this later
     # temp node tree rendering testing
@@ -305,7 +322,7 @@ def main() -> None:
         delta_time: float = 0.0
 
         while True:
-            tick_outcome: ProgramStatus = tick(ctx, delta_time, print_at)
+            tick_outcome: ProgramStatus = tick(ctx, delta_time, print_at, fps_counter)
             if tick_outcome == ProgramStatus.EXIT:
                 break
 
