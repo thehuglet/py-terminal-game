@@ -38,7 +38,8 @@ class InputAction(Enum):
     DRAFT_NEW_BRANCHING_NODE = auto()
     DRAFTING_NODE_SELECT_PREV_RUNE = auto()
     DRAFTING_NODE_SELECT_NEXT_RUNE = auto()
-    CONFIRM_NODE_DRAFT = auto()
+    DRAFTING_NODE_CONFIRM = auto()
+    DRAFTING_NODE_CANCEL = auto()
 
 
 def render_carousel(ctx: Context, print_at: PrintAtCallable) -> None:
@@ -113,10 +114,10 @@ def generate_tree_view(ctx: Context) -> list[TreeViewItem]:
 
 def tick(
     ctx: Context,
-    _delta_time: float,
+    delta_time: float,
     print_at: PrintAtCallable,
 ) -> ProgramStatus:
-    key: Keystroke = ctx.terminal.inkey(timeout=0.1)
+    key: Keystroke = ctx.terminal.inkey(timeout=0.0)
     if key == "q":
         return ProgramStatus.EXIT
 
@@ -148,14 +149,19 @@ def tick(
         can_move_prev_rune: bool = rune_index > 0
         can_move_next_rune: bool = rune_index < len(ctx.owned_runes) - 1
 
+        if key.name == "KEY_ESCAPE":
+            maybe_input_action = InputAction.DRAFTING_NODE_CANCEL
+
         if key.name == "KEY_ENTER":
-            maybe_input_action = InputAction.CONFIRM_NODE_DRAFT
+            maybe_input_action = InputAction.DRAFTING_NODE_CONFIRM
 
         if key.name == "KEY_LEFT" and can_move_prev_rune:
             maybe_input_action = InputAction.DRAFTING_NODE_SELECT_PREV_RUNE
 
         if key.name == "KEY_RIGHT" and can_move_next_rune:
             maybe_input_action = InputAction.DRAFTING_NODE_SELECT_NEXT_RUNE
+
+        # if key.name == "KEY_UP"
 
     # --- Input action execution ---
     match maybe_input_action:
@@ -183,13 +189,21 @@ def tick(
             assert isinstance(ctx.state, DraftingNode)
             ctx.state.selected_owned_rune_index += 1
 
-        case InputAction.CONFIRM_NODE_DRAFT:
+        case InputAction.DRAFTING_NODE_CONFIRM:
             assert isinstance(ctx.state, DraftingNode)
-            raise Exception("Not implemented.")
+            ctx.state.parent_view_item.node.children.insert(
+                0, Node(rune=ctx.owned_runes[ctx.state.selected_owned_rune_index])
+            )
+            ctx.state = NavigatingTree(0)
+
+        case InputAction.DRAFTING_NODE_CANCEL:
+            ctx.state = NavigatingTree(0)
 
         case _:
             pass
 
+    # This injects the extra ghost draft node into the tree
+    # before rendering, so that it doesn't physically exist
     if isinstance(ctx.state, DraftingNode):
         depth: int = ctx.state.parent_view_item.depth + 1
         tree_view.insert(
@@ -219,7 +233,7 @@ def tick(
             text_segments.append(RichText(text, color))
 
         if item_is_ghost:
-            color.a = 0.7 + 0.2 * math.sin(ctx.tick_count * 0.65)
+            color.a = 0.7 + 0.2 * math.sin(5.0 * ctx.tick_count * delta_time)
 
         print_at(2 * item.depth, index, text_segments)
 
@@ -263,7 +277,13 @@ def main() -> None:
                             RuneRarity.RARE,
                             RuneData(0, "baz"),
                         )
-                    )
+                    ),
+                    Node(
+                        Rune(
+                            RuneRarity.RARE,
+                            RuneData(0, "faz"),
+                        )
+                    ),
                 ],
             ),
         ]

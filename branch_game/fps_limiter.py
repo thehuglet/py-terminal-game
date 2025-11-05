@@ -18,7 +18,8 @@ def create_fps_limiter(
     target = 1.0 / float(fps)
     poll_interval = float(poll_interval)
     spin_reserve = float(spin_reserve)
-    # schedule first frame to end target seconds from now
+
+    # Schedule the end of the first frame
     next_frame = time.perf_counter() + target
 
     def wait_for_next_frame() -> float:
@@ -26,20 +27,27 @@ def create_fps_limiter(
         now = time.perf_counter()
 
         if now < next_frame:
+            # Sleep until just before the target time, then spin briefly
             sleep_until = next_frame - spin_reserve if spin_reserve > 0 else next_frame
-            # sleep-poll loop (low CPU, reasonable accuracy)
-            while time.perf_counter() < sleep_until:
-                time.sleep(min(poll_interval, sleep_until - time.perf_counter()))
-            # short busy-wait to tighten timing
+
+            # Sleep-poll loop (low CPU usage, good precision)
+            while True:
+                remaining = sleep_until - time.perf_counter()
+                if remaining <= 0:
+                    break
+                time.sleep(min(poll_interval, remaining))
+
+            # Busy-wait to hit the exact target more precisely
             if spin_reserve > 0:
                 while time.perf_counter() < next_frame:
                     pass
+
             end = time.perf_counter()
-            dt = end - (next_frame - target)  # actual frame duration
+            dt = end - (next_frame - target)
             next_frame += target
             return dt
 
-        # we're behind schedule: compute dt since last frame and advance schedule
+        # We're behind schedule — catch up without sleeping
         dt = now - (next_frame - target)
         while next_frame <= now:
             next_frame += target
