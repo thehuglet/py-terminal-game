@@ -152,7 +152,7 @@ def tick(
         can_move_prev_rune: bool = rune_index > 0
         can_move_next_rune: bool = rune_index < len(ctx.owned_runes) - 1
 
-        if key.name == "KEY_ESCAPE":
+        if key == "z":
             maybe_input_action = InputAction.DRAFTING_NODE_CANCEL
 
         if key.name == "KEY_ENTER":
@@ -197,10 +197,19 @@ def tick(
             ctx.state.parent_view_item.node.children.insert(
                 0, Node(rune=ctx.owned_runes[ctx.state.selected_owned_rune_index])
             )
+            # Update tree this frame
+            tree_view = generate_tree_view(ctx)
+
+            _ = ctx.owned_runes.pop(ctx.state.selected_owned_rune_index)
+
             ctx.state = NavigatingTree(0)
 
         case InputAction.DRAFTING_NODE_CANCEL:
-            ctx.state = NavigatingTree(0)
+            assert isinstance(ctx.state, DraftingNode)
+            # This ensures the cursor is restored
+            # to it's pre-drafting position
+            prev_index_in_tree_view: int = ctx.state.draft_node_index_in_tree_view - 1
+            ctx.state = NavigatingTree(prev_index_in_tree_view)
 
         case _:
             pass
@@ -229,20 +238,29 @@ def tick(
             text = item.node.rune.data.display_name
             color = rune_rarity_color(item.node.rune.rarity)
             text_segments.append(RichText(text, color))
+
+            # TODO: finish this
+            desc_text:
+            text_segments.append(RichText("boop", color))
+        elif item_is_ghost:
+            min_alpha: float = 0.3
+            max_alpha: float = 1.0
+
+            text = item.node.rune.data.display_name
+            color = rune_rarity_color(item.node.rune.rarity)
+            color.a = 0.3 + (max_alpha - min_alpha) * (
+                math.sin(5.0 * ctx.tick_count * delta_time) * 0.5 + 0.5
+            )
+            text_segments.append(RichText(text, color))
         else:
             text = item.node.rune.data.display_name
             color = rune_rarity_color(item.node.rune.rarity)
             color.a *= 0.5
             text_segments.append(RichText(text, color))
 
-        if item_is_ghost:
-            min_alpha: float = 0.3
-            max_alpha: float = 1.0
-            color.a = 0.3 + (max_alpha - min_alpha) * (
-                math.sin(5.0 * ctx.tick_count * delta_time) * 0.5 + 0.5
-            )
-
         print_at(2 * item.depth, index, text_segments)
+    # dev: state debug display
+    print_at(1, 29, RichText(f"State: {ctx.state.__class__.__name__}"))
 
     # --- Carousel: keep selected item centered and shift neighbors around it ---
     if isinstance(ctx.state, DraftingNode) and ctx.owned_runes:
@@ -269,7 +287,7 @@ def main() -> None:
         terminal,
         screen,
         state=NavigatingTree(selected_view_item_index=0),
-        node_tree=Node(Rune(RuneRarity.COMMON, RuneData(0, "dummy")), is_sentinel=True),
+        node_tree=Node(Rune(RuneRarity.COMMON, RuneData(0, 1, "dummy")), is_sentinel=True),
     )
     fps_counter = FPSCounter()
 
@@ -280,39 +298,16 @@ def main() -> None:
             Node(
                 Rune(
                     RuneRarity.COMMON,
-                    RuneData(0, "foo"),
+                    RuneData(0, 1, "Pik"),
                 )
-            ),
-            Node(
-                Rune(
-                    RuneRarity.UNCOMMON,
-                    RuneData(0, "bar"),
-                ),
-                children=[
-                    Node(
-                        Rune(
-                            RuneRarity.RARE,
-                            RuneData(0, "baz"),
-                        )
-                    ),
-                    Node(
-                        Rune(
-                            RuneRarity.RARE,
-                            RuneData(0, "faz"),
-                        )
-                    ),
-                ],
             ),
         ]
     )
 
     # temp initial inventory for testing
     ctx.owned_runes = [
-        Rune(RuneRarity.COMMON, RuneData(10, "foo")),
-        Rune(RuneRarity.COMMON, RuneData(3, "bar")),
-        Rune(RuneRarity.UNCOMMON, RuneData(30, "boop")),
-        Rune(RuneRarity.RARE, RuneData(23, "abcd")),
-        Rune(RuneRarity.UNCOMMON, RuneData(69, "aaaaaaaaaaaaaaaaaa")),
+        Rune(RuneRarity.COMMON, RuneData(20, 1, "Pik")),
+        Rune(RuneRarity.COMMON, RuneData(3, 2, "Vek")),
     ]
 
     fill_screen_background(terminal, screen, BACKGROUND_COLOR)

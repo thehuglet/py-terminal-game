@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
@@ -8,7 +9,7 @@ from blessed import Terminal
 from branch_game.screen_buffer import Screen
 
 
-class GameState:
+class GameState(ABC):
     pass
 
 
@@ -33,6 +34,7 @@ class RuneRarity(Enum):
 @dataclass
 class RuneData:
     points: int
+    mult: int
     display_name: str
 
 

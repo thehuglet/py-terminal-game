@@ -1,4 +1,5 @@
 from copy import copy
+
 from branch_game.ezterm import RGBA
 from branch_game.models import RuneRarity
 
