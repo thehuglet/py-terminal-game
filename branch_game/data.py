@@ -18,3 +18,7 @@ RUNE_RARITY_MAX_BRANCH_COUNT = {
 
 def rune_rarity_color(rarity: RuneRarity) -> RGBA:
     return copy(RUNE_RARITY_COLOR[rarity])
+
+
+def rune_rarity_max_branch_count(rarity: RuneRarity) -> int:
+    return copy(RUNE_RARITY_MAX_BRANCH_COUNT[rarity])

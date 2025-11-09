@@ -9,7 +9,11 @@ from blessed import Terminal
 from blessed.keyboard import Keystroke
 
 import branch_game.ezterm as ezterm
-from branch_game.data import RUNE_RARITY_MAX_BRANCH_COUNT, rune_rarity_color
+from branch_game.data import (
+    RUNE_RARITY_MAX_BRANCH_COUNT,
+    rune_rarity_color,
+    rune_rarity_max_branch_count,
+)
 from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
 from branch_game.fps_counter import render_fps_counter, update_fps_counter
 from branch_game.fps_limiter import create_fps_limiter
@@ -235,14 +239,20 @@ def tick(
         )
 
         if item_is_selected:
+            # node label
             text = item.node.rune.data.display_name
-            color = rune_rarity_color(item.node.rune.rarity)
-            text_segments.append(RichText(text, color))
+            main_label_color = rune_rarity_color(item.node.rune.rarity)
+            text_segments.append(RichText(text, main_label_color))
 
-            # TODO: finish this
-            # desc_text: str = ""
+            # branch (current/max) display
+            current_branches: int = len(item.node.children)
+            max_branches: int = rune_rarity_max_branch_count(item.node.rune.rarity)
+            text_segments.append(
+                RichText(f" ({current_branches}/{max_branches})", main_label_color)
+            )
+
+            # stat display
             stat_displays: list[str] = []
-            # desc_text: str = ""
             stat_points = item.node.rune.data.points
             stat_mult = item.node.rune.data.mult
 
@@ -257,17 +267,38 @@ def tick(
             min_alpha: float = 0.3
             max_alpha: float = 1.0
 
+            # node label
             text = item.node.rune.data.display_name
-            color = rune_rarity_color(item.node.rune.rarity)
-            color.a = 0.3 + (max_alpha - min_alpha) * (
+            main_label_color = rune_rarity_color(item.node.rune.rarity)
+            main_label_color.a = 0.3 + (max_alpha - min_alpha) * (
                 math.sin(5.0 * ctx.tick_count * delta_time) * 0.5 + 0.5
             )
-            text_segments.append(RichText(text, color))
+            text_segments.append(RichText(text, main_label_color))
+
+            # branch (current/max) display
+            current_branches = len(item.node.children)
+            max_branches = rune_rarity_max_branch_count(item.node.rune.rarity)
+            text_segments.append(
+                RichText(f" ({current_branches}/{max_branches})", main_label_color)
+            )
+
+            # stat display
+            stat_displays = []
+            stat_points = item.node.rune.data.points
+            stat_mult = item.node.rune.data.mult
+
+            if stat_points >= 1:
+                stat_displays.append(f"+{stat_points} points")
+            if stat_mult >= 2:
+                stat_displays.append(f"+{stat_mult} mult")
+
+            desc_text = " ".join(stat_displays)
+            text_segments.append(RichText(f"  ({desc_text})", RGBA(1.0, 1.0, 1.0, 0.4)))
         else:
             text = item.node.rune.data.display_name
-            color = rune_rarity_color(item.node.rune.rarity)
-            color.a *= 0.5
-            text_segments.append(RichText(text, color))
+            main_label_color = rune_rarity_color(item.node.rune.rarity)
+            main_label_color.a *= 0.5
+            text_segments.append(RichText(text, main_label_color))
 
         print_at(2 * item.depth, index, text_segments)
     # dev: state debug display
