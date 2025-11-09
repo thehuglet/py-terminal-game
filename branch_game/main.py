@@ -10,7 +10,7 @@ from blessed.keyboard import Keystroke
 
 import branch_game.ezterm as ezterm
 from branch_game.data import RUNE_RARITY_MAX_BRANCH_COUNT, rune_rarity_color
-from branch_game.ezterm import BACKGROUND_COLOR, RichText, fill_screen_background
+from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
 from branch_game.fps_counter import render_fps_counter, update_fps_counter
 from branch_game.fps_limiter import create_fps_limiter
 from branch_game.models import (
@@ -240,8 +240,19 @@ def tick(
             text_segments.append(RichText(text, color))
 
             # TODO: finish this
-            desc_text:
-            text_segments.append(RichText("boop", color))
+            # desc_text: str = ""
+            stat_displays: list[str] = []
+            # desc_text: str = ""
+            stat_points = item.node.rune.data.points
+            stat_mult = item.node.rune.data.mult
+
+            if stat_points >= 1:
+                stat_displays.append(f"+{stat_points} points")
+            if stat_mult >= 2:
+                stat_displays.append(f"+{stat_mult} mult")
+
+            desc_text: str = " ".join(stat_displays)
+            text_segments.append(RichText(f"  ({desc_text})", RGBA(1.0, 1.0, 1.0, 0.4)))
         elif item_is_ghost:
             min_alpha: float = 0.3
             max_alpha: float = 1.0
@@ -298,7 +309,7 @@ def main() -> None:
             Node(
                 Rune(
                     RuneRarity.COMMON,
-                    RuneData(0, 1, "Pik"),
+                    RuneData(5, 1, "Pik"),
                 )
             ),
         ]
