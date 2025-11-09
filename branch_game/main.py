@@ -46,6 +46,8 @@ class InputAction(Enum):
     DRAFTING_NODE_SELECT_NEXT_RUNE = auto()
     DRAFTING_NODE_CONFIRM = auto()
     DRAFTING_NODE_CANCEL = auto()
+    DRAFTING_NODE_MOVE_UP = auto()
+    DRAFTING_NODE_MOVE_DOWN = auto()
 
 
 def render_carousel(ctx: Context, print_at: PrintAtCallable) -> None:
@@ -168,7 +170,11 @@ def tick(
         if key.name == "KEY_RIGHT" and can_move_next_rune:
             maybe_input_action = InputAction.DRAFTING_NODE_SELECT_NEXT_RUNE
 
-        # if key.name == "KEY_UP"
+        if key.name == "KEY_UP":
+            maybe_input_action = InputAction.DRAFTING_NODE_MOVE_UP
+
+        if key.name == "KEY_DOWN":
+            maybe_input_action = InputAction.DRAFTING_NODE_MOVE_DOWN
 
     # --- Input action execution ---
     match maybe_input_action:
@@ -186,6 +192,7 @@ def tick(
                 parent_view_item=tree_view[ctx.state.selected_view_item_index],
                 draft_node_index_in_tree_view=ctx.state.selected_view_item_index + 1,
                 selected_owned_rune_index=0,
+                starting_draft_node_index_in_tree_view=ctx.state.selected_view_item_index + 1,
             )
 
         case InputAction.DRAFTING_NODE_SELECT_PREV_RUNE:
@@ -198,8 +205,14 @@ def tick(
 
         case InputAction.DRAFTING_NODE_CONFIRM:
             assert isinstance(ctx.state, DraftingNode)
+
+            diff = (
+                ctx.state.draft_node_index_in_tree_view
+                - ctx.state.starting_draft_node_index_in_tree_view
+            )
+
             ctx.state.parent_view_item.node.children.insert(
-                0, Node(rune=ctx.owned_runes[ctx.state.selected_owned_rune_index])
+                diff, Node(rune=ctx.owned_runes[ctx.state.selected_owned_rune_index])
             )
             # Update tree this frame
             tree_view = generate_tree_view(ctx)
@@ -214,6 +227,26 @@ def tick(
             # to it's pre-drafting position
             prev_index_in_tree_view: int = ctx.state.draft_node_index_in_tree_view - 1
             ctx.state = NavigatingTree(prev_index_in_tree_view)
+
+        case InputAction.DRAFTING_NODE_MOVE_UP:
+            assert isinstance(ctx.state, DraftingNode)
+            diff = (
+                ctx.state.draft_node_index_in_tree_view
+                - ctx.state.starting_draft_node_index_in_tree_view
+            )
+
+            if diff > 0:
+                ctx.state.draft_node_index_in_tree_view -= 1
+
+        case InputAction.DRAFTING_NODE_MOVE_DOWN:
+            assert isinstance(ctx.state, DraftingNode)
+            diff = (
+                ctx.state.draft_node_index_in_tree_view
+                - ctx.state.starting_draft_node_index_in_tree_view
+            )
+
+            if diff < len(ctx.state.parent_view_item.node.children):
+                ctx.state.draft_node_index_in_tree_view += 1
 
         case _:
             pass

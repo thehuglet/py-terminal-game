@@ -23,6 +23,7 @@ class DraftingNode(GameState):
     parent_view_item: TreeViewItem
     draft_node_index_in_tree_view: int
     selected_owned_rune_index: int
+    starting_draft_node_index_in_tree_view: int
 
 
 class RuneRarity(Enum):
