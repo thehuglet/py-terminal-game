@@ -1,7 +1,7 @@
 from copy import copy
 
+from branch_game.data_types import RuneRarity
 from branch_game.ezterm import RGBA
-from branch_game.models import RuneRarity
 
 RUNE_RARITY_COLOR = {
     RuneRarity.COMMON: RGBA(1.0, 1.0, 1.0, 1.0),

@@ -66,6 +66,7 @@ class Context:
     node_tree: Node
     owned_runes: list[Rune] = field(default_factory=list)  # type: ignore[reportUnknownVariableType]
     tick_count: int = 0
+    debug_line: str = ""
 
 
 @dataclass

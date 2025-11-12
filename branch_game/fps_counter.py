@@ -1,7 +1,7 @@
 from blessed import Terminal
 
+from branch_game.data_types import FPSCounter
 from branch_game.ezterm import RGBA, RichText, print_at
-from branch_game.models import FPSCounter
 from branch_game.screen_buffer import Screen
 
 
@@ -19,10 +19,10 @@ def render_fps_counter(
     terminal: Terminal,
     screen: Screen,
     fps: FPSCounter,
-    screen_width: int,
 ) -> None:
-    s = f"{fps.ema:5.1f} FPS"
-    x = max(0, screen_width - len(s) - 1)
+    fps_text = f"{fps.ema:5.1f} FPS"
     color = RGBA(1.0, 1.0, 1.0, 1.0)
     color.a = 1.0
-    print_at(terminal, screen, x, 0, RichText(s, color, bold=True))
+
+    x = max(0, screen.width - len(fps_text) - 1)
+    print_at(terminal, screen, x, 0, RichText(fps_text, color, bold=True))

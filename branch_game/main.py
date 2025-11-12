@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import math
+from abc import ABC
 from enum import Enum, auto
 from functools import partial
-from typing import Callable
+from typing import Callable, cast
 
 from blessed import Terminal
 from blessed.keyboard import Keystroke
@@ -14,10 +15,7 @@ from branch_game.data import (
     rune_rarity_color,
     rune_rarity_max_branch_count,
 )
-from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
-from branch_game.fps_counter import render_fps_counter, update_fps_counter
-from branch_game.fps_limiter import create_fps_limiter
-from branch_game.models import (
+from branch_game.data_types import (
     Context,
     DraftingNode,
     FPSCounter,
@@ -28,6 +26,10 @@ from branch_game.models import (
     RuneRarity,
     TreeViewItem,
 )
+from branch_game.ezterm import BACKGROUND_COLOR, RGBA, RichText, fill_screen_background
+from branch_game.fps_counter import render_fps_counter, update_fps_counter
+from branch_game.fps_limiter import create_fps_limiter
+from branch_game.helpers import tree_view_index_to_node_child_index
 from branch_game.screen_buffer import Screen, buffer_diff, flush_diffs
 
 type PrintAtCallable = Callable[[int, int, RichText | list[RichText]], None]
@@ -219,7 +221,8 @@ def tick(
 
             _ = ctx.owned_runes.pop(ctx.state.selected_owned_rune_index)
 
-            ctx.state = NavigatingTree(0)
+            # revert back to pre-draft position
+            ctx.state = NavigatingTree(ctx.state.draft_node_index_in_tree_view)
 
         case InputAction.DRAFTING_NODE_CANCEL:
             assert isinstance(ctx.state, DraftingNode)
@@ -230,12 +233,12 @@ def tick(
 
         case InputAction.DRAFTING_NODE_MOVE_UP:
             assert isinstance(ctx.state, DraftingNode)
-            diff = (
-                ctx.state.draft_node_index_in_tree_view
-                - ctx.state.starting_draft_node_index_in_tree_view
-            )
 
-            if diff > 0:
+            child_index = tree_view_index_to_node_child_index(ctx.state)
+            children_count = len(ctx.state.parent_view_item.node.children)
+            is_not_first_child = child_index > children_count
+
+            if is_not_first_child:
                 ctx.state.draft_node_index_in_tree_view -= 1
 
         case InputAction.DRAFTING_NODE_MOVE_DOWN:
@@ -245,11 +248,23 @@ def tick(
                 - ctx.state.starting_draft_node_index_in_tree_view
             )
 
-            if diff < len(ctx.state.parent_view_item.node.children):
+            child_index = tree_view_index_to_node_child_index(ctx.state)
+            children_count = len(ctx.state.parent_view_item.node.children)
+            is_not_last_child = child_index < children_count
+
+            if is_not_last_child:
                 ctx.state.draft_node_index_in_tree_view += 1
 
         case _:
             pass
+
+    # --- Debugging section ---
+    if isinstance(ctx.state, DraftingNode):
+        foo = (
+            ctx.state.draft_node_index_in_tree_view
+            - ctx.state.starting_draft_node_index_in_tree_view
+        )
+        ctx.debug_line = str(foo)
 
     # This injects the extra ghost draft node into the tree
     # before rendering, so that it doesn't physically exist
@@ -334,8 +349,12 @@ def tick(
             text_segments.append(RichText(text, main_label_color))
 
         print_at(2 * item.depth, index, text_segments)
+
     # dev: state debug display
-    print_at(1, 29, RichText(f"State: {ctx.state.__class__.__name__}"))
+    print_at(1, 28, RichText(f"State: {ctx.state.__class__.__name__}"))
+
+    # universal debug line
+    print_at(1, 29, RichText(ctx.debug_line, RGBA(1.0, 0.0, 0.0, 1.0)))
 
     # --- Carousel: keep selected item centered and shift neighbors around it ---
     if isinstance(ctx.state, DraftingNode) and ctx.owned_runes:
@@ -347,7 +366,6 @@ def tick(
         ctx.terminal,
         ctx.screen,
         fps_counter,
-        ctx.screen.width,
     )
 
     flush_diffs(ctx.terminal, buffer_diff(ctx.screen))
@@ -382,6 +400,9 @@ def main() -> None:
     # temp initial inventory for testing
     ctx.owned_runes = [
         Rune(RuneRarity.COMMON, RuneData(20, 1, "Pik")),
+        Rune(RuneRarity.COMMON, RuneData(3, 2, "Vek")),
+        Rune(RuneRarity.COMMON, RuneData(3, 2, "Vek")),
+        Rune(RuneRarity.COMMON, RuneData(3, 2, "Vek")),
         Rune(RuneRarity.COMMON, RuneData(3, 2, "Vek")),
     ]
 

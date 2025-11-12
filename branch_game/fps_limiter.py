@@ -4,8 +4,8 @@ from typing import Callable
 
 def create_fps_limiter(
     fps: float,
-    poll_interval: float = 0.001,  # shorter polling for smoother accuracy
-    spin_reserve: float = 0.002,  # slightly longer spin window
+    poll_interval: float = 0.001,
+    spin_reserve: float = 0.002,
 ) -> Callable[[], float]:
     """
     High-precision, drift-correcting frame limiter.
