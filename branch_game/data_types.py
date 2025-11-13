@@ -20,10 +20,13 @@ class NavigatingTree(GameState):
 
 @dataclass
 class DraftingNode(GameState):
-    parent_view_item: TreeViewItem
-    draft_node_index_in_tree_view: int
-    selected_owned_rune_index: int
-    starting_draft_node_index_in_tree_view: int
+    tree_view_index: int
+    selected_rune_index: int
+    # parent_view_item: TreeViewItem
+    # draft_node_index_in_tree_view: int
+    # selected_owned_rune_index: int
+    # starting_draft_node_index_in_tree_view: int
+    # pass
 
 
 class RuneRarity(Enum):
@@ -49,7 +52,7 @@ class Rune:
 class Node:
     rune: Rune
     children: list[Node] = field(default_factory=list)  # type: ignore[reportUnknownVariableType]
-    is_sentinel: bool = False
+    parent: Node | None = None
 
 
 @dataclass
